@@ -40,13 +40,13 @@ class Asari
   # CloudSearch API).
   #
   def api_version
-    @api_version || ENV['CLOUDSEARCH_API_VERSION'] || "2011-02-01" 
+    @api_version || "2013-01-01"
   end
 
   # Public: returns the current aws_region, or the sensible default of
   # "us-east-1."
   def aws_region
-    @aws_region || "us-east-1"
+    @aws_region || "ap-northeast-1"
   end
 
   # Public: Search for the specified term.
@@ -68,36 +68,38 @@ class Asari
     term,options = "",term if term.is_a?(Hash) and options.empty?
 
     bq = boolean_query(options[:filter]) if options[:filter]
-    page_size = options[:page_size].nil? ? 10 : options[:page_size].to_i
+    limit = options[:limit].nil? ? 10 : options[:limit].to_i
+    start = options[:start].nil? ? 0 : options[:start].to_i
 
     url = "http://search-#{search_domain}.#{aws_region}.cloudsearch.amazonaws.com/#{api_version}/search"
 
-    if api_version == '2013-01-01'
-      if options[:filter]
-        url += "?q=#{CGI.escape(bq)}"
-        url += "&q.parser=structured"
-      else
-        url += "?q=#{CGI.escape(term.to_s)}"
-      end
+    if options[:filter]
+      url += "?q=#{CGI.escape(bq)}"
+      url += "&q.parser=structured"
     else
       url += "?q=#{CGI.escape(term.to_s)}"
-      url += "&bq=#{CGI.escape(bq)}" if options[:filter]
+      url += "&q.parser=lucene"
     end
 
-    return_statement = api_version == '2013-01-01' ? 'return' : 'return-fields'
-    url += "&size=#{page_size}"
-    url += "&#{return_statement}=#{options[:return_fields].join ','}" if options[:return_fields]
+    url += "&size=#{limit}"
+    url += "&start=#{start}"
 
-    if options[:page]
-      start = (options[:page].to_i - 1) * page_size
-      url << "&start=#{start}"
+    url += options[:return_fields] ? "&return=#{options[:return_fields].join ','}" : "&return=_all_fields,_score"
+
+    if options[:highlight] and options[:highlight][:fields]
+      highlight_options = options[:highlight][:options]
+      highlight_options ||= {max_phrases: 3, format: "text",pre_tag:"*#*",post_tag:"*%*"}
+      options[:highlight][:fields].split(',').each do |field|
+        url += "&highlight.#{field}=#{CGI.escape(highlight_options.to_json)}"
+      end
     end
 
     if options[:rank]
       rank = normalize_rank(options[:rank])
-      rank_or_sort = api_version == '2013-01-01' ? 'sort' : 'rank'
-      url << "&#{rank_or_sort}=#{CGI.escape(rank)}"
+      url << "&rank=#{rank}"
     end
+
+    puts url unless Rails.env.production?
 
     begin
       response = HTTParty.get(url)
@@ -111,7 +113,7 @@ class Asari
       raise Asari::SearchException.new("#{response.response.code}: #{response.response.msg} (#{url})")
     end
 
-    Asari::Collection.new(response, page_size)
+    Asari::Collection.new(response, limit)
   end
 
   # Public: Add an item to the index with the given ID.

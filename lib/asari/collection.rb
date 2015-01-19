@@ -41,12 +41,8 @@ class Asari
 
       start = resp["hits"]["start"]
       @current_page = (start / page_size) + 1
-      if resp["hits"]["hit"].first && resp["hits"]["hit"].first["data"]
-        @data = {}
-        resp["hits"]["hit"].each { |hit|  @data[hit["id"]] = hit["data"]}
-      elsif resp["hits"]["hit"].first && resp["hits"]["hit"].first["fields"]
-        @data = {}
-        resp["hits"]["hit"].each { |hit|  @data[hit["id"]] = hit["fields"]}
+      if resp["hits"]["hit"].first && resp["hits"]["hit"].first["fields"]
+        @data = resp["hits"]["hit"]
       else
         @data = resp["hits"]["hit"].map { |hit| hit["id"] }
       end
