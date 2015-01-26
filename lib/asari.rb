@@ -70,6 +70,7 @@ class Asari
     bq = boolean_query(options[:filter]) if options[:filter]
     limit = options[:limit].nil? ? 10 : options[:limit].to_i
     start = options[:start].nil? ? 0 : options[:start].to_i
+    parser = options[:parser].nil? ? 'lucene' : options[:parser]
 
     url = "http://search-#{search_domain}.#{aws_region}.cloudsearch.amazonaws.com/#{api_version}/search"
 
@@ -78,7 +79,7 @@ class Asari
       url += "&q.parser=structured"
     else
       url += "?q=#{CGI.escape(term.to_s)}"
-      url += "&q.parser=lucene"
+      url += "&q.parser=#{parser}"
     end
 
     url += "&size=#{limit}"
