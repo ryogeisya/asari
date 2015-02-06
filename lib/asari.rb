@@ -84,7 +84,6 @@ class Asari
 
     url += "&size=#{limit}"
     url += "&start=#{start}"
-    url += "&sort=#{options[:sort]}" if options[:sort]
 
     url += options[:return_fields] ? "&return=#{options[:return_fields].join ','}" : "&return=_all_fields,_score"
 
@@ -96,9 +95,9 @@ class Asari
       end
     end
 
-    if options[:rank]
-      rank = normalize_rank(options[:rank])
-      url << "&rank=#{rank}"
+    if options[:sort]
+      sort = normalize_sort(options[:sort])
+      url << "&sort=#{sort}"
     end
 
     puts url unless Rails.env.production?
@@ -242,14 +241,14 @@ class Asari
     reduce.call(terms)
   end
 
-  def normalize_rank(rank)
-    rank = Array(rank)
-    rank << :asc if rank.size < 2
+  def normalize_sort(sort)
+    sort = Array(sort)
+    sort << :asc if sort.size < 2
     
     if api_version == '2013-01-01'
-      "#{rank[0]} #{rank[1]}"
+      "#{sort[0]} #{sort[1]}"
     else
-      rank[1] == :desc ? "-#{rank[0]}" : rank[0]
+      sort[1] == :desc ? "-#{sort[0]}" : sort[0]
     end
   end
 
