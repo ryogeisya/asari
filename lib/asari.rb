@@ -97,7 +97,7 @@ class Asari
 
     if options[:sort]
       sort = normalize_sort(options[:sort])
-      url << "&sort=#{sort}"
+      url << "&sort=#{CGI.escape(sort)}"
     end
 
     puts url unless Rails.env.production?
