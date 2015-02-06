@@ -84,6 +84,7 @@ class Asari
 
     url += "&size=#{limit}"
     url += "&start=#{start}"
+    url += "&sort=#{options[:sort]}" if options[:sort]
 
     url += options[:return_fields] ? "&return=#{options[:return_fields].join ','}" : "&return=_all_fields,_score"
 
